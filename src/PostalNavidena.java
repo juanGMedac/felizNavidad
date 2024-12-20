@@ -2,12 +2,30 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
+import java.io.InputStream;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import javax.sound.sampled.*;
 
 public class PostalNavidena {
+    private static Clip clip;
+    private static boolean isMuted = false;
+
     public static void main(String[] args) {
+        // Iniciar la música
+        try {
+            // Cargar el archivo de audio desde resources
+            InputStream audioStream = PostalNavidena.class.getResourceAsStream("/navidad.wav");
+            AudioInputStream audioInput = AudioSystem.getAudioInputStream(audioStream);
+            clip = AudioSystem.getClip();
+            clip.open(audioInput);
+            clip.loop(Clip.LOOP_CONTINUOUSLY);
+            clip.start();
+        } catch (Exception e) {
+            System.out.println("Error al cargar la música: " + e.getMessage());
+            e.printStackTrace();
+        }
+
         // Crear la ventana principal
         JFrame frame = new JFrame("Feliz Navidad");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -24,22 +42,13 @@ public class PostalNavidena {
             private BufferedImage imagen = null;
             {
                 try {
-                    File file = new File("MEDAC_MD_felicitacion_ES_2024.jpg");
-                    System.out.println("Intentando cargar desde: " + file.getAbsolutePath());
-
-                    if (file.exists()) {
-                        imagen = ImageIO.read(file);
-                        System.out.println("Imagen cargada exitosamente");
+                    // Cargar la imagen desde dentro del JAR
+                    InputStream inputStream = PostalNavidena.class.getResourceAsStream("/MEDAC_MD_felicitacion_ES_2024.jpg");
+                    if (inputStream != null) {
+                        imagen = ImageIO.read(inputStream);
+                        System.out.println("Imagen cargada exitosamente desde el JAR");
                     } else {
-                        file = new File("src/MEDAC_MD_felicitacion_ES_2024.jpg");
-                        System.out.println("Intentando cargar desde: " + file.getAbsolutePath());
-
-                        if (file.exists()) {
-                            imagen = ImageIO.read(file);
-                            System.out.println("Imagen cargada exitosamente desde src");
-                        } else {
-                            System.out.println("No se encontró la imagen en ninguna ubicación");
-                        }
+                        System.out.println("No se pudo encontrar la imagen en el JAR");
                     }
                 } catch (Exception e) {
                     System.out.println("Error al cargar la imagen: " + e.getMessage());
@@ -76,10 +85,52 @@ public class PostalNavidena {
         imagenPanel.setPreferredSize(new Dimension(400, 300));
         panel.add(imagenPanel, BorderLayout.CENTER);
 
-        // Panel para el botón con margen inferior
+        // Panel para los botones (cambiamos a BorderLayout)
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        buttonPanel.setLayout(new BorderLayout());
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 20, 20));
+
+        // Panel izquierdo para el botón de sonido
+        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+
+        // Botón de sonido con texto simple y más ancho
+        JButton soundButton = new JButton("ON");
+        soundButton.setPreferredSize(new Dimension(60, 30));
+        soundButton.setBackground(new Color(51, 122, 183));
+        soundButton.setForeground(Color.WHITE);
+        soundButton.setFocusPainted(false);
+        soundButton.setBorderPainted(false);
+        soundButton.setFont(new Font("Arial", Font.BOLD, 12));
+
+        soundButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (clip != null) {
+                    if (isMuted) {
+                        clip.start();
+                        soundButton.setText("ON");
+                    } else {
+                        clip.stop();
+                        soundButton.setText("OFF");
+                    }
+                    isMuted = !isMuted;
+                }
+            }
+        });
+
+        // Efecto hover para el botón de sonido
+        soundButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                soundButton.setBackground(new Color(40, 96, 144));
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                soundButton.setBackground(new Color(51, 122, 183));
+            }
+        });
+
+        // Panel central para el botón Leer más
+        JPanel centerPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
 
         // Crear botón "Leer más"
         JButton botonFelicitar = new JButton("Leer más...");
@@ -130,8 +181,25 @@ public class PostalNavidena {
             }
         });
 
-        buttonPanel.add(botonFelicitar);
+        // Añadir botones a sus respectivos paneles
+        leftPanel.add(soundButton);
+        centerPanel.add(botonFelicitar);
+
+        // Añadir los paneles al panel principal de botones
+        buttonPanel.add(leftPanel, BorderLayout.WEST);
+        buttonPanel.add(centerPanel, BorderLayout.CENTER);
         panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Gestionar cierre de la ventana y detener música
+        frame.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                if (clip != null) {
+                    clip.stop();
+                    clip.close();
+                }
+            }
+        });
 
         // Hacer que la ventana sea redimensionable
         frame.setResizable(true);

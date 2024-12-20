@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="felizNavidad:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/felizNavidad_jar</output-path>
+    <root id="archive" name="felizNavidad.jar">
+      <element id="module-output" name="felizNavidad" />
+    </root>
+  </artifact>
+</component>
